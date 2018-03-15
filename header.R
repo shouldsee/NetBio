@@ -1,0 +1,6 @@
+library(expm)
+library(Rutil)
+library(igraph)
+source('dream5.R')
+load.assignment.data()
+g.true <- graph_from_adjacency_matrix(adj.true)

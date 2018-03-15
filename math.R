@@ -1,0 +1,2 @@
+sN =N->a^2/(a + b)/(a+c)+b^2/(b + a)/(b+d)+c^2/(a + c)/(c+d)+d^2/(b+d)/(c+d);
+roots =Solve[{A == a^2/(a + b)/(a+c)/N, B == b^2/(b + a)/(b+d)/N, C == c^2/(a + c)/(c+d)/N,D==d^2/(b+d)/(c+d)/N}/.sN, {a, b, c,d}, MaxExtraConditions -> Automatic]

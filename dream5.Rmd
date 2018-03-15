@@ -1,0 +1,208 @@
+---
+bibliography: citation.bib
+csl: elsevier-vancouver.csl
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  bookdown::pdf_document2:
+    includes:
+      in_header: Templates/preamble.tex
+    keep_tex: yes
+    number_sections: yes
+    toc: yes
+  html_document: default
+---
+
+```{r,echo = F}
+recalc = T
+
+knitr::opts_chunk$set(
+  echo = F
+ # ,results = 'hide' ##### Will hide tables
+ ,cache = F
+ ,eval = T
+ ,eval.after = c('fig.cap','code')
+)
+suppressPackageStartupMessages({
+  source('dream5.R')
+})
+```
+
+```{r,eval = T}
+load.assignment.data()
+
+qc.list <- list()
+
+install.packages.lazy(c("doSNOW",'doParallel','doMPI'))
+```
+
+### Data
+
+I used the pre-simulated data "medium_network.rda" that included the expression levels of `r ngene` genes along with the underlying true network to test the performance of various algorithms. 
+
+### Method
+
+I assumed the interaction matrix $A_{ij}$ is symmetric and binary,  and $A_{ij}=1$ if there is interaction between gene i and gene j, otherwise $A_{ij}=0$. The problem then reduce to a binary classification (existence of an undirected edge) and standard confusion matrix may be constructed to evaluate the performance. Specifically, area-under-precision-recall-curve (AUPR) and area-under-the-ROC (AROC) will be plotted for comparision, along with a list of F1 score.
+
+## Performance of various algorithms
+
+
+```{r, eval=recalc}
+PKGMethod='GENIE3'
+fig.cap=PKGMethod
+PKG = strsplit(PKGMethod,'\\.')[[1]][1]
+library(PKG,character.only = T)
+library(doParallel)
+set.seed(0)
+res <- GENIE3(exprMatrix = t(as.matrix(expr.dat)),nCores = 6,verbose = T)
+options(error=recover)
+qc <- pipeline(res,silent=1)
+qc$method =  PKGMethod
+qc.list[[PKGMethod]] <- qc
+```
+
+
+
+```{r,eval=recalc}
+PKGMethod='GeneNet'
+fig.cap=PKGMethod
+PKG = strsplit(PKGMethod,'\\.')[[1]][1]
+library(PKG,character.only = T)
+pcor.dyn = ggm.estimate.pcor(expr.dat)
+df <- network.test.edges(pcor.dyn,direct = T)
+pairs = as.matrix(df[,c('node1','node2')])
+res <- pair2adj(pairs,genes=genes,is.indexed = T,symmetric = F
+                ,fill = -log(df$pval)
+                # ,fill = -log(df$pval.dir+0.0001)
+                )
+qc <- pipeline(res,silent=1)
+qc$method =  PKGMethod
+qc.list[[PKGMethod]] <- qc
+```
+
+
+```{r,eval=recalc}
+PKGMethod='MI.inverted'
+fig.cap=PKGMethod
+PKG = strsplit(PKGMethod,'\\.')[[1]][1]
+# library(PKG,character.only = T)
+res <- mat.invert(make.mi(expr.dat),post=abs)
+qc <- pipeline(res,silent=1)
+qc$method =  PKGMethod
+qc.list[[PKGMethod]] <- qc
+
+PKGMethod='MI.raw'
+fig.cap=PKGMethod
+PKG = strsplit(PKGMethod,'\\.')[[1]][1]
+# library(PKG,character.only = T)
+res <- (make.mi(expr.dat))
+qc <- pipeline(res,silent=1)
+qc$method =  PKGMethod
+qc.list[[PKGMethod]] <- qc
+
+
+PKGMethod='COV.inverted'
+fig.cap=PKGMethod
+PKG = strsplit(PKGMethod,'\\.')[[1]][1]
+# library(PKG,character.only = T)
+res <- mat.invert(cov(expr.dat),post = abs)
+qc <- pipeline(res,silent=1)
+qc$method =  PKGMethod
+qc.list[[PKGMethod]] <- qc
+
+
+```
+
+```{r,eval=recalc,fig.cap=cap,fig.height=3,results='hide'}
+PKGMethod='xgboost.importance'
+cap=PKGMethod
+PKG = strsplit(PKGMethod,'\\.')[[1]][1]
+library(PKG,character.only = T)
+
+source('xgb.R')
+df <- Gxgb.fit(expr.dat,model.dir = 'qc/')
+pairs = as.matrix(df[,c('Feature','output')])
+VAR <- apply(expr.dat,2,var)
+res <- pair2adj(pairs,genes=genes,is.indexed = F,symmetric = F,
+                fill = df$Gain*VAR[df$output]*VAR[df$Feature])
+qc <- pipeline(res)
+qc$method =  PKGMethod
+qc.list[[PKGMethod]] <- qc
+```
+
+
+
+```{r,eval=recalc}
+PKGMethod <- 'bnlearn.pc'
+PKG = strsplit(PKGMethod,'\\.')[[1]][1]
+library(PKG,character.only = T)
+# # library(GeneNet)
+# pcor.dyn = ggm.estimate.pcor(expr.dat)
+# df <- network.test.edges(pcor.dyn)
+# # df
+# hist(unlist(expr.dat))
+
+# cutoff <- quantile(unlist(expr.dat),.5)
+# apply(expr.dat,
+lst <- list()
+PKGMethod <- 'bnlearn.bde'
+res <- bnlearn::hc(as.data.frame(expr.dat.bin),score='bde')
+qc <- perfromance.pairs(
+  genes,
+  res$arcs,
+  true.pairs
+)
+# qc[,-ncol(qc)]
+qc$tab
+qc$method =  PKGMethod
+qc.list[[PKGMethod]]<-qc
+lst <- c(lst,list(qc))
+# rbind(qc)
+
+
+PKGMethod <- 'bnlearn.pc'
+res <- bnlearn::pc.stable(expr.dat.bin)
+qc <- perfromance.pairs(
+  genes,
+  res$arcs,
+  true.pairs
+)
+qc$tab
+qc$method =  PKGMethod
+qc.list[[PKGMethod]]<-qc
+lst <- c(lst,list(qc))
+
+
+```
+
+
+
+```{r,eval=recalc}
+save(qc.list,file='qc-cache.rdf5')
+```
+
+```{r,eval = T}
+load('qc-cache.rdf5')
+```
+
+```{r,eval= T,fig.height=3}
+lapply(qc.list,
+  function(qc.meta){
+   if(length(qc.meta)==5){
+     # par(height=)
+     diagnose(qc.meta)
+     mtext(qc.meta$method,line=0)
+   }else{
+   }
+   NULL
+  }) ->rub
+```
+
+```{r one-shot,eval=T}
+tb <- rbind_list(qc.list[c('bnlearn.pc',
+                           'bnlearn.bde')])
+tb <- tb[, !(colnames(tb) %in% c('tab')) ]
+knitr::kable(tb,
+             caption = 'Comparision of one-shot algorithms that output binary weights')
+```
+
+
