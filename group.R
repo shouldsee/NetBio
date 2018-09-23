@@ -22,15 +22,17 @@ load.assignment.data()
   
 }
 
-routine.bnlearn.bootstrap <- function(expr.dat,...){
-  library(bnlearn)
+routine.bnlearn.bootstrap <- function(expr.dat,iss=1,R=200,score='bde',...){
+  require(bnlearn)
   
   # expr.dat.bin <- as.data.frame( binarise.aggF(expr.dat,median))
   expr.dat.bin <- bnlearn::discretize(as.data.frame(expr.dat),method = 'quantile',breaks=3)
   # expr.dat.bin <- bnlearn::discretize(as.data.frame(expr.dat),method = 'interval')
-  # res.bnlearn <- boot.strength((expr.dat.bin),algorithm = 'hc',algorithm.args=list(score='bds',iss=10))
-  res.bnlearn <- boot.strength((expr.dat.bin),algorithm = 'hc',algorithm.args=list(score='bde',iss=4),
-  cpdag = T,R=200,...)
+  # res.bnlearn <- boot.strength((expr.dat.bin),algorithm = 'hc',algorithm.args=list(score='bds',iss=iss))
+  res.bnlearn <- boot.strength((expr.dat.bin),algorithm = 'hc',algorithm.args=list(
+    score=score
+    ,iss=iss),
+  cpdag = T,R=R,...)
   # res.bnlearn <- boot.strength((expr.dat.bin),algorithm = 'hc',algorithm.args=list(score='bde'),
   #       cpdag = T,R=200)
   res.bnlearn <- arrange(res.bnlearn,desc(strength))
@@ -38,9 +40,22 @@ routine.bnlearn.bootstrap <- function(expr.dat,...){
   pipeline(res.bnlearn)
 }
 routine.bnlearn.bootstrap(expr.dat)
-routine.bnlearn.bootstrap(expr.dat,cluster=clu)
+{
+  # clu <- makeCluster(16)
+  par(mfrow=c(3,3))
+  routine.bnlearn.bootstrap(expr.dat,cluster=clu,score='bde')
+# routine.bnlearn.bootstrap(expr.dat,cluster=clu,score='bds')
+# routine.bnlearn.bootstrap(expr.dat,cluster=clu,score='bdla')
+# stopCluster(clu)
+}
+pipeline(abs(cor(expr.dat,method='spearman')))
+gres<-routine.GENIE3(expr.dat,silent=0)
+
+
+pipeline((gres))
+
 require(doParallel)
-clu <- makeCluster(8)
+clu <- makeCluster(16)
 close(clu)
 doParallel::stopImplicitCluster()
 # doParallel::registerDoParallel()
@@ -89,10 +104,6 @@ par(mfrow=c(1,1))
 # plot()
 # plot(Ps,Ts)
 pheatmap::pheatmap(expr.dat%>%t)
-pipeline(abs(cor(expr.dat,method='spearman')))
-gres<-routine.GENIE3(expr.dat,silent=0)
-
-pipeline((gres))
 
 library(ggplot2)
 

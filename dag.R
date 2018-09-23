@@ -1,84 +1,34 @@
 Rutil::install.packages.lazy(c('dagitty','pcalg','jpeg'))
 library(igraph)
-# 
-# library(dagitty)
-# library(pcalg)
-# x <- dagitty('dag{
-#   A -- B -- C
-#              }')
-# # attributes(x)
-# # x@
-# # x$dagitty
-# # is(x)
-# # classso
-# x = graphLayout(x)
-# plot(graphLayout(x))
-# # plot(x)
-# # equivalenceClass(x)
-# eqs = equivalentDAGs(x)
-# lapply( eqs,function(x)plot(graphLayout(x)))
-# lapply( eqs,function(x)plot(graphLayout(x)))
-# # ?equiv
-# # dagitty::equ
-# eqs[[1]]
-# # ?equivalentDAGs
-# # dagitty::a
-# edges(x)
 
-
-# setwd(dirname(sys.frame(1)$ofile))
-
-
-
-
-
-
-
+require(igraph)
+require(Rutil)
 source('dirichlet.R')
 
 datadir = './assignment_1_files/'
 load(file.path(datadir,"small_network_1.rda"),verbose = 1)
-dat1[1:3,]
 load(file.path(datadir,"small_network_2.rda"),verbose = 1)
-# dat2[1:3,]
-
-# # ?table
-# 
-# pars = adjacent_vertices(g, V(g), mode = c("out"))
-# get_parent <- function(x)pars[[x]]
-# get_parent <- function(x) adjacent_vertices(g, x, mode = c("out"))[[1]]
-# g = graph_from_adjacency_matrix(aM)
-# neighbors(g,V(g))
-# edges(g)[[1]]
-# igraph:::parent(g)
-# neighbors(g,V(g))
-# 
-
-# vertex(g)
-# as.data.frame(g)
-dt = cbind(dat1,dat1)
-dt = dat1
 
 
-eta0 = 1
-tb = table(dt)
+#' @export
+lp.diri <- function(n,eta,equiv = T){
+  Sn = sum(n)
+  Se = sum(eta)
+  logP = lgamma(Se) - lgamma(Se + Sn) + sum(lgamma(n+eta) - lgamma(eta))
+  if (equiv){
+    ### apply equivalency correction (optionial)
+    logP = logP + ndchoose(n,log = T)
+  }
+  logP
+}
 
-# importIntoEnv
-# igraph:::add_class
-# is(g)
-# findMethods('igraph')
-# getClass('igraph')
-require(igraph)
 
 lp.nodes <- function(nodes,tb,eta=array(1,dim(tb)),...){
   tb.marg = margin.table(tb,margin = nodes)
   eta.marg = margin.table(eta,margin = nodes)
-  # cat('marginal:','\n')
-  # print(eta.marg)
-  # print(tb.marg)
   lp = lp.diri(tb.marg,eta.marg,...)
 }
-
+source('net_post.R')
 .PGM_binary <- setRefClass('PGM_binary',
                       fields = list(
                         # dat=c('array','data.frame'),
@@ -96,12 +46,8 @@ lp.nodes <- function(nodes,tb,eta=array(1,dim(tb)),...){
                         lp.node= function(.self,selfNode,eta0=1,
                                            eta= array(eta0,dim(.self$tb)),...){
                           sess = .self
-                          # eta = array(eta0,dim(tb))
                           parNode = sess$F$get_parent(selfNode)
-                          # parNode = c(1,3)
-                          # selfNode = c(2)
                           nodes = c(selfNode,parNode)
-                          # cat('nodes',nodes,'\n')
                           lp.nodes(nodes,sess$tb,eta,...) - lp.nodes(parNode,sess$tb,eta,...)
                         },
                         logL = function(.self,...){
@@ -109,12 +55,13 @@ lp.nodes <- function(nodes,tb,eta=array(1,dim(tb)),...){
                           lps = sapply( V(sess$mdlgraph), partial(sess$lp.node,...))
                           
                           sum(lps)
-                        }
+                        },
+                        net_posterior = net_posterior
                       )
                     )
 
-# adjacent_vertices(g, V(g), mode = c("in"))
 
+##### Testing the algorithm
 source('graph_2edge.R')
 sess = .PGM_binary$new(
   # dat=dat1,
@@ -125,6 +72,10 @@ sess$preprocess()
 sess$lp.node(1)%>%print
 sess$logL()%>%print
 
+
+
+##### My custom algorithm that computes the 
+##### likelihood of a dag on a dataset
 myalgo <- function(g,dat,...){
   if (is(g,'matrix')){
     g <- graph_from_adjacency_matrix(g)
@@ -137,10 +88,7 @@ myalgo <- function(g,dat,...){
   sess$logL(...)
 }
 
-# source('graph_1edge.R')
 source('graph_2edge.R')
-# for (aM in aMs){
-
 
 library(bnlearn)
 #' Convert an adjacency matrix to a "bnlearn" object
@@ -156,7 +104,7 @@ amat2bn <- function(aM,nodes = rownames(aM)){
 }
 
 
-###### Load all graphs 
+###### Load all graphs (Stored as adjacency matrix)
 lst = list()
 data.scripts = c('graph_0edge.R',
                  'graph_1edge.R',
@@ -169,44 +117,40 @@ for (f in data.scripts){
 all.graphs <- lst
 
 
-# 
-# main <- function(aM){
-#   cat('\n','\n')
-#   g = graph_from_adjacency_matrix(aM)
-#   sess$mdlgraph = g
-#   sess$preprocess()
-#   # sess$lp.node(1)%>%print
-#   eta0 = 1
-#   lL = sess$logL(eta0=eta0,equiv=F)
-#   lL %>%print
-#   
-#   bn <- amat2bn(aM)
-#   bn$logL = lL
-#   bn$iss = 2^nrow(aM) * eta0
-#   bn$dat <- sess$dat
-#   bn
-# }
-# 
-# bn.list <- lapply(lst,main)
-# 
-# 
-# {bn2df <- function(bn){
-#   bnscore <- score(bn,bn$dat,'bde',iss=bn$iss)
-#   bnscore <- score(bn,bn$dat,'bde',iss=8)
-#   
-#   list(model=modelstring(bn),myalgo.bde=bn$logL,bnlearn.bde=bnscore
-#        ,bnlearn.bic=score(bn,bn$dat,'bic')
-#        ,iss=bn$iss)
-# }}(bn.list[[1]])
-# 
-# df <- Rutil::combine_args(rbind)(lapply(bn.list,bn2df))
-# df
 
-# deal::jointprior
+#### Helper functions to compute data.frames
 
-# sess$logL
+aM2bn <- function(aM,dat){
+  eta0 = 1
+  bn <- amat2bn(aM)
+  bn$iss = 2^nrow(aM) * eta0
+  bn$dat <- dat
+  bn
+}
 
-# source('plot_dag.R')
-# boxed_equiv('graph_0edge.R')
-# boxed_equiv('graph_1edge.R')
-# boxed_equiv('graph_2edge.R')
+
+{bn2df <- function(bn, iss=bn$iss){
+  bnscore <- score(bn,bn$dat,'bde',iss=iss)
+  bnscore <- score(bn,bn$dat,'bde',iss=iss)
+  # bn
+  myalgo.bde<- myalgo( amat(bn),bn$dat,eta0 = iss/8,equiv=F)
+  list(model=modelstring(bn),myalgo.bde.iss=myalgo.bde,bnlearn.bde.iss=bnscore
+       ,bnlearn.bic=score(bn,bn$dat,'bic')
+       ,iss=iss
+  )
+}}
+
+
+main <- function(dat = dat1,...){
+  # bn.list <- lapply(lst,aM2bn)
+  f = partial(aM2bn,dat=dat)
+  bn.list <- lapply(lst,f)
+  # bn.list <- mapply(aM2bn,lst,dat)
+  g <- partial(bn2df,...)
+  # df <- sapply(bn.list,g)
+  df <- Rutil::combine_args(rbind)(lapply(bn.list,g))
+  df <- Rutil::unlist.df(data.frame(df))
+  df <- cbind(df,dat= deparse(substitute(dat)))
+}
+
+

@@ -1,0 +1,190 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\hypersetup{unicode=true,
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{longtable,booktabs}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{5}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+%%% Change title format to be more compact
+\usepackage{titling}
+
+% Create subtitle command for use in maketitle
+\newcommand{\subtitle}[1]{
+  \posttitle{
+    \begin{center}\large#1\end{center}
+    }
+}
+
+\setlength{\droptitle}{-2em}
+  \title{}
+  \pretitle{\vspace{\droptitle}}
+  \posttitle{}
+  \author{}
+  \preauthor{}\postauthor{}
+  \predate{\centering\large\emph}
+  \postdate{\par}
+  \date{16 March, 2018}
+
+\usepackage{bbm} 
+\newcommand{\D}{\text{d}}
+\newcommand{\indicator}{\mathbbm{1}}
+\newcommand{\hamm}{d_h}
+\newcommand{\symhamm}{d_{sh}}
+\newcommand{\hz}{\text{Hz}}
+\newcommand{\tr}{\text{tr}}
+\newcommand{\Iext}{{I_e/A}}
+\newcommand\gvn[1][]{\:#1\vert\:}
+\usepackage{afterpage}
+\usepackage{fancyvrb}
+\usepackage{longtable}
+\usepackage{booktabs} 
+\usepackage{placeins}
+
+\begin{document}
+
+{
+\setcounter{tocdepth}{2}
+\tableofcontents
+}
+\subsection{Finding priors for the beta
+distribution}\label{finding-priors-for-the-beta-distribution}
+
+Beta distribution is the natural prior for a binomial/bernoulli
+distribution. Considering distribution of a binomial variable
+\(X\gvn\theta\sim Binom(\theta)\), in order to make its marginalisd
+distribution \(P(X) = \int P(X\gvn\theta)P(\theta).d\theta\)
+analytically tractable, one of the choice is to assume
+\(\theta\sim Beta(M,\alpha)\), so that:
+
+\[
+\begin{aligned}
+P(\theta) &=\frac{x^{\alpha - 1}(1-x)^{M-\alpha-1}}{B(\alpha,M-\alpha)}
+\\
+E(\theta) &={\alpha\over M }
+\end{aligned}
+\]
+
+\subsubsection{Constraint 1:}\label{constraint-1}
+
+\[
+\begin{aligned}
+P(\theta\le 0.25) = P(\theta\ge 0.75) =  0.05 \\
+P(\theta\le 0.75)=0.95
+\end{aligned}
+\]
+
+Fitted result: \(\theta\sim\) Beta(4.933, 4.932 )
+
+\subsubsection{Constraint 2}\label{constraint-2}
+
+\[
+\begin{aligned}
+\text{argmax}_\theta(P(\theta))=0.4 \\
+P(\theta\le 0.3) = 0.1
+\end{aligned}
+\]
+
+Fitted result: \(\theta\sim\) Beta(13.863, 20.295 )
+
+\begin{figure}
+\centering
+\includegraphics{beta_prior_files/figure-latex/constrained-beta-1.pdf}
+\caption{\label{fig:constrained-beta}The shape of the beta distribution
+constrianed under the respective conditions. Left: Constraint 1. Right:
+Constraint 2. (green: PDF, black: CDF)}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics{beta_prior_files/figure-latex/bayes-1.pdf}
+\caption{\label{fig:bayes}Inference of posterior distribution on parameter
+\(\theta\) given mutatble sequence: 011100101101}
+\end{figure}
+
+\subsubsection{\texorpdfstring{Basics for Bayesian inference
+\label{sec:bayes-basics}}{Basics for Bayesian inference }}\label{basics-for-bayesian-inference}
+
+\[
+\begin{aligned}
+\text{likelihood}&: f(\theta) = P(x \gvn \theta) \\
+\text{prior}&: f(\theta) = P(\theta) \\
+\text{posterior}&: f(\theta)  = P(\theta \gvn x) = \frac{  P(x\gvn \theta) P(\theta)  }{P(x) } \\
+\text{marginal likelihood} &: P(x) =  \int P(x\gvn \theta) P(\theta).d\theta
+\end{aligned}
+\]
+
+The observed toss sequence is: 011100101101
+
+Assume each coin toss is independent from each other, the likelihood of
+an observed sequence is only dependent on the total number of heads and
+not the sequence it occurred in. Denoting the coin toss as a sequence
+\(\{x_i\}\) where \(x_i \in \{0,1\}\), we have
+
+\[
+\begin{aligned}
+\text{\#head} = \indicator\{x_i=1\} \\
+\text{\#head} \sim Binom(|\{x_i\}|,\theta)
+\end{aligned}
+\] Combining with the prior \(\theta\sim\) Beta(13.863, 20.295 ), I
+calculated the marginal likelihood numerically to be \(P(x)=\) 0.11 and
+derived the posterior distribution accordingly (see figure
+\ref{fig:bayes}). MLE is obtained at \(\hat{\theta}=\) 0.45
+
+
+\end{document}

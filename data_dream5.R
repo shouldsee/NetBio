@@ -1,5 +1,5 @@
 # datadir <- 'dream5/training data/Network 3 - E. coli/'
-res.list <- list()
+# res.list <- list()
 {
   fname = 'dream5/training data/Network 3 - E. coli/net3_expression_data.tsv'
   f <- readLines(fname)
@@ -28,11 +28,11 @@ res.list <- list()
   g.true <- graph_from_adjacency_matrix(adj.true)
 }
 
-
+# Rutil::install.packages.lazy('glasso')
 
 dim(adj.true.big)
 {
-  genes<-randomWalk(adj.true.big,30,directed = F)
+  genes<-randomWalk(adj.true.big,70,directed = F)
   genes <- sample(genes,replace = F)
   # genes <- sample(genes.big,30,replace = F) 
   # genes <- do.call(c,neighborhood(g.big,nodes=genes,order = 1))
@@ -43,6 +43,100 @@ dim(adj.true.big)
        ,main=bquote(N==.(length(genes))))
   # length(genes)
 }
+
+rm(adj.true)
+rm(expr.dat)
+
+
+
+
+load.assignment.data()
+env.data <- list(adj.true = adj.true,expr.dat=expr.dat,genes=genes,
+                 gmat = gmat_from_adjacency(adj.true))
+env.data <- list(adj.true = adj.true.big,expr.dat=expr.dat.big,genes=genes.big,
+                 gmat = gmat_from_adjacency(adj.true.big))
+# with()
+# with(env.sub,adj.true)
+with(env.data,adjace)
+par(mfrow=c(3,3))
+
+
+
+out <- lapply(1:50,contraster)
+lst <- rbind_list(out)
+# {
+#   R =  50
+#   lst = rbind()
+#   for (  i in 1:R){
+#       env.sub <- subnet(env.data,nT=50)
+#       if(length(env.sub$genes)<5){next}
+#       
+#     with(env.sub,
+#          {
+#            print(length(genes))
+#            t1 <- system.time({res <- routine.bnlearn.bootstrap(expr.dat,clu=clu)})
+#            r1 <- pipeline(res,adj.true = adj.true,silent=1)
+#            t2 <- system.time({res <- routine.GENIE3(expr.dat,nCores=16)})
+#            r2 <- pipeline(res,adj.true = adj.true,silent=1)
+#            r1$globals$runtime <- t1[3]
+#            r1$globals$method  <- 'bnlearn'
+#            r2$globals$runtime <- t2[3]
+#            r2$globals$method  <- 'GENIE3'
+#            # d <- rbind(r1$globals,r2$globals)
+#            # names(d) <- names(r1$globals)
+#            # d$ngene <- length(genes)
+#            # d
+#            d <-rbind(r1$globals,r2$globals)
+#            d <-cbind(d,ngene =length(genes))
+#            d
+#            }) ->out 
+#     lst = rbind(lst,out)
+#   }
+# }
+# env.sub$expr.dat
+
+
+
+load('e-coli-subnet.rdf5')
+p <- plot.lst(lst)
+ggsave(p,filename = 'ecoli-subnet.png',width=8,height=4)
+load('assignment-subnet.rdf5')
+p <- plot.lst(lst)
+ggsave(p,filename = 'assignment-subnet.png',width=8,height=4)
+
+
+save(lst, env.data, file='e-coli-subnet.rdf5')
+save(lst, env.data, file='assignment-subnet.rdf5')
+load('e-coli-subnet.rdf5')
+
+plot(val1$AUPR,val2$AUPR,xlim=c(0,1),ylim=c(0,1))
+abline(0,1,lty=3)
+
+# reshape2::dcast(df,method~AUPR)
+# ggplot(df) + geom_point(a)
+
+rbind(out[[1]]$globals,out[[2]]$globals)
+lst
+# bind_rows(lst,out)
+lst
+tm <- system.time({1:10})
+
+tm <- system.time( replicate(10000, 1:1000 ) )
+as.numeric(t[3])
+?system.time
+# names(qc$globals)
+# names(r1$globals)
+df <- as.data.frame(lst)
+head(df)
+qc <- pipeline(routine.bnlearn.bootstrap(expr.dat,cluster=clu))
+
+load.assignment.data()
+res <- routine.bnlearn.bootstrap(expr.dat,clu=clu) 
+pipeline(res,adj.true = adj.true)
+
+dim(env.data$adj.true)
+aM <- gmat_from_adjacency(g.true)
+gis <- unique(markov(aM))
 
 normalise <- function(x){
   (x-mean(x))/sd(x)

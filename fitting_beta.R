@@ -1,3 +1,28 @@
+library(Rutil)
+
+preview<- function(p,xs =seq(0,1,length.out = 100),silent=F
+                   ,xlab = 'x',ylab='y'
+                   ,...){
+  dots = list(...)
+  # if (is.null(dots$xlab)){ dots$xlab='x'}
+  # if (is.null(dots$ylab)){ dots$ylab='y'}
+  ys= p(xs)
+  xlab = (substitute(xlab))
+  ylab = (substitute(ylab))
+  # ys = deparse(substitute(y))
+  # xs = deparse(substitute(xs))
+  dat <- list(x=xs,y=ys
+              ,xlab=xlab
+              ,ylab=ylab
+  )
+  # dat <- list(y=ys)
+  if (silent) {return(dat)}
+  # with(data,plot())
+  do.call(plot,args = c(dat,dots) )
+}
+pbeta.ma <- function(x,m,a){pbeta(x,a,m-a)}
+dbeta.ma <- function(x,m,a){dbeta(x,a,m-a)}
+
 loss <- function(param){
   m = param[1]
   a = param[2]

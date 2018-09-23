@@ -161,11 +161,23 @@ generator.mat <- apply(pmat,2,cumsum)
 generator.mat <- apply(pmat,2,function(x)x==max(x))
 init =sample(names(H),prob = exp(-H),1)
 
+gmat_from_adjacency <- function(amat){
+  if (is(amat,'igraph')){
+    amat <- as.symmetric(as.matrix(igraph::as_adjacency_matrix(amat)))
+  }
+  pmat <- apply(amat,2,renorm)
+  generator.mat <- apply(pmat,2,cumsum)
+}
+
+
+
+aM <- gmat_from_adjacency(g.true)
+gis <- unique(markov(aM))
 
 lookup<-function(r,cur,gen.mat){
   which(r<gen.mat[,cur])[1]
 }
-markov <- function(init.prob,generator.mat,nT=100){
+markov <- function(generator.mat,init.prob=rep(1,nrow(generator.mat)),nT=100){
   init =sample(seq_along(init.prob),prob = init.prob,1)
   rand <- runif(nT)
   out <- vector(length=nT)

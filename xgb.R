@@ -1,19 +1,11 @@
-# install.packages.lazy('xgboost')
-# library(xgboost)
-# # ?bnlearn::bn.fit
-# {
-#   dat <- dat1[,1:2]
-#   res1=bn.fit(bn,dat,method = 'bayes')
-#   res2=bn.fit(bn,dat,method = 'mle')
-#   print(res1)
-#   print(res2)
-# }
-# 
-
 library(xgboost)
 library(Rutil)
 library(dplyr)
 
+##### Predict gene expression (predictee) 
+#### from all other genes (predictors)
+##### 5-fold CV is ran to probe best parameter
+####  to prevent overfitting
 regGene <- function(expr.dat
   ,topred = 5
   ,nthread =1
@@ -35,42 +27,35 @@ regGene <- function(expr.dat
                 ,objective=objective
                 ,silent = silent
                 ,eta = eta
-                # ,alpha=.5,lambda = .5
-                # ,alpha = 1,lambda=.5
             )
-  # cb.
   param <- modifyList(param,list(...))
   res <- xgb.cv( param,dtrain,nrounds = 300
                  ,verbose = 1-silent
                  ,callbacks = list(cb.cv.predict(save_models = T),
-                                   cb.early.stop(10,metric_name = 'test-rmse',verbose = 1-silent)
+                                   cb.early.stop(10,metric_name = 'test-rmse',
+                                                 verbose = 1-silent)
                                    )
                  ,nfold= 5
                  )
-  # print(objective)
-  # param <- res$best_iteration
   print(sprintf('Gene %s: \t best iteration:%d \t test_rmse_mean:%E'
                 ,gene,res$best_iteration
         ,tail(res$evaluation_log$test_rmse_mean,1)))
-  # print(tail(res$evaluation_log,1))
   param$ntreelimit <- res$best_ntreelimit
 
   mdl = res$models[[1]]
   mdl = xgb.train(param,dtrain,nrounds=res$best_iteration)
-  # mdl = res
   pd = predict(mdl,dtrain)
-  # bquote()
-  # bquote(.(genes[topred])'.xgb')
   xgb.attr(mdl,'gene')<-genes[topred]
   if (!is.null(model.dir)){
     fname = paste0(model.dir,genes[topred],'.xgb')
     xgb.save(fname = fname,model = mdl)
   }
-  # xgb.dump(fname = paste0(model.dir,genes[topred],'.xgb'),model=mdl)
   mdl
 }
 
-# library(xgboost)
+
+##### Convert a xgboost model to data.frame that 
+##### outlines importance of each predictor
 model2df <- function(mdl){
   gene <- xgb.attr(mdl,'gene')
   print(gene)
@@ -92,6 +77,7 @@ model2df <- function(mdl){
 
 }
 
+### load all models in the cache folder
 load.folder <- function(model.dir,callback=xgb.load,...){
   fs <- list.files(model.dir,full.names = T,...)
   print(bquote('[]Loading'~.(length(fs))~objects))
@@ -99,8 +85,9 @@ load.folder <- function(model.dir,callback=xgb.load,...){
 }
 
 
-# !is.null(F)
-Gxgb.fit <-function(dat,model.dir = NULL,post=T,...){
+### The wrapper function that predict adjacency from 
+### observed expression
+Gxgb.fit <-function(dat,model.dir = NULL,post=T,silent=1,...){
   {
     # dat <- as.matrix(expr.dat)
     if(!is.null(model.dir)){
@@ -116,9 +103,10 @@ Gxgb.fit <-function(dat,model.dir = NULL,post=T,...){
                  # objective='reg:logistic',
                  nthread=4,
                  eta=0.1,
-                 max_depth= length(genes)-1
-                 ,alpha=0.25,lambda = 0.25,
-                 model.dir = model.dir
+                 max_depth= length(genes)-1,
+                 alpha=0.25,lambda = 0.25,
+                 model.dir = model.dir,
+                 silent= silent
     )
     param <- modifyList(param,list(...))
     param$f = regGene
@@ -132,6 +120,8 @@ Gxgb.fit <-function(dat,model.dir = NULL,post=T,...){
   }
 }
 
+
+#### Post processing of the raw importance scores
 Gxgb.post <- function(dat,mdls=NULL,model.dir=NULL){
   if (is.null(mdls)){
     mdls<-load.folder(model.dir,callback = xgb.load)
@@ -142,38 +132,37 @@ Gxgb.post <- function(dat,mdls=NULL,model.dir=NULL){
   df
 }
 
-# mlds <- load.folder('model/',model.dir = T)
 
 
 
 
 ##### Example  
-if (interactive()){
-  {
-    load('assignment_1_files/medium_network.rda',verbose = T)
-    pc <- prcomp(t(expr.dat))
-    par(mfrow=c(1,2))
-    biplot(pc)
-    plot(apply(expr.dat,2,var)%>%sort)
-    
-    # expr.dat <- as.matrix(expr.dat)
-    expr.dat.std <- apply(expr.dat,2,function(x)(x-mean(x))/sd(x) )
-    colnames(expr.dat.std) <- colnames(expr.dat)
-    # df <- Gxgb.fit(expr.dat.std)
-    df <- Gxgb.fit(expr.dat)
-    # df <- Gxgb.post(expr.mat,model.dir = 'model/')
-  }
-  
-  load('assignment_1_files/medium_network_true.rda')
-  genes <- colnames(expr.dat)
-  adj.true <- pair2adj(true.pairs,genes = genes)
-  {
-    pairs = as.matrix(df[,c('Feature','output')])
-    res <- pair2adj(pairs,genes=genes,is.indexed = F,symmetric = F
-                    ,fill = df$score
-                    # ,fill = df$Gain
-    )
-    qc <- pipeline(res)
-  }
-}
+# if (interactive()){
+#   {
+#     load('assignment_1_files/medium_network.rda',verbose = T)
+#     pc <- prcomp(t(expr.dat))
+#     par(mfrow=c(1,2))
+#     biplot(pc)
+#     plot(apply(expr.dat,2,var)%>%sort)
+#     
+#     # expr.dat <- as.matrix(expr.dat)
+#     expr.dat.std <- apply(expr.dat,2,function(x)(x-mean(x))/sd(x) )
+#     colnames(expr.dat.std) <- colnames(expr.dat)
+#     # df <- Gxgb.fit(expr.dat.std)
+#     df <- Gxgb.fit(expr.dat)
+#     # df <- Gxgb.post(expr.mat,model.dir = 'model/')
+#   }
+#   
+#   load('assignment_1_files/medium_network_true.rda')
+#   genes <- colnames(expr.dat)
+#   adj.true <- pair2adj(true.pairs,genes = genes)
+#   {
+#     pairs = as.matrix(df[,c('Feature','output')])
+#     res <- pair2adj(pairs,genes=genes,is.indexed = F,symmetric = F
+#                     ,fill = df$score
+#                     # ,fill = df$Gain
+#     )
+#     qc <- pipeline(res)
+#   }
+# }
 
