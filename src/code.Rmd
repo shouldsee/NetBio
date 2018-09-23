@@ -1,0 +1,118 @@
+---
+output:
+  html_document: 
+    # highlight: pygments
+    toc: yes
+    toc_float: yes
+    toc_depth: 4
+    number_sections: yes
+---
+
+## Code
+
+**"Rutil" is my collection of utility and can be viewed online at https://github.com/shouldsee/Rutil/**
+
+This code appendix is also submitted as a html separately.
+
+### Fitting the beta distribution to constraints
+
+`r fname<-'fitting_beta.R'`
+
+```{r,code=readLines(fname),eval = F,echo = T}
+### CODE
+```
+
+### Systematic helpers for inference on the [0,1] interval
+
+`r fname<-'bayes_infer.R'`
+
+```{r,code=readLines(fname),eval = F,echo = T}
+### CODE
+```
+
+### Bayesian network inference
+
+`r fname<-'dag.R'`
+
+```{r,code=readLines(fname),eval = F,echo = T}
+### CODE
+```
+
+### Construct posterior accroding to the graphical model
+
+`r fname<-'net_post.R'`
+
+```{r,code=readLines(fname),eval = F,echo = T}
+### CODE
+```
+
+#### Graphs
+
+`r fname<-'graph_0edge.R'`
+
+```{r,code=readLines(fname),eval = F,echo = T}
+### CODE
+```
+
+`r fname<-'graph_1edge.R'`
+
+```{r,code=readLines(fname),eval = F,echo = T}
+### CODE
+```
+
+`r fname<-'graph_2edge.R'`
+
+```{r,code=readLines(fname),eval = F,echo = T}
+### CODE
+```
+
+### Comparison of algortihms
+
+#### Homemade xgboost-based regressional predictor (Gxgb)
+
+`r fname<-'xgb.R'`
+
+```{r,code=readLines(fname),eval = F,echo = T}
+### CODE
+```
+
+#### Calculation of QC-metrics 
+
+`r fname<-'dream5.R'`
+
+```{r,code=readLines(fname),eval = F,echo = T}
+### CODE
+```
+
+#### Routines for commonly used algorithms
+
+`r fname<-'routine.R'`
+
+```{r,code=readLines(fname),eval = F,echo = T}
+### CODE
+```
+
+#### Bootstrapping on sub-networks
+
+`r fname<-'subnet.R'`
+
+```{r,code=readLines(fname),eval = F,echo = T}
+### CODE
+```
+
+##### Working script for GNW dataset
+
+`r fname<-'assignment-subnet.R'`
+
+```{r,code=readLines(fname),eval = F,echo = T}
+### CODE
+```
+
+##### Working script for DREAM5 dataset, network 3
+
+`r fname<-'ecoli-subnet.R'`
+
+```{r,code=readLines(fname),eval = F,echo = T}
+### CODE
+```
+
